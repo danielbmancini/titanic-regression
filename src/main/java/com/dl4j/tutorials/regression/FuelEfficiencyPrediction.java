@@ -1,4 +1,4 @@
-package com.dl4j.tutorials;
+package com.dl4j.tutorials.regression;
 
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.transform.TransformProcessRecordReader;
