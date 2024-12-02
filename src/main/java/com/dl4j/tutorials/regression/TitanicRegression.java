@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
@@ -27,17 +28,18 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
-public class FuelEfficiencyPrediction {
+public class TitanicRegression {
 
-    private static final Logger log = LoggerFactory.getLogger(FuelEfficiencyPrediction.class);
+    private static final Logger log = LoggerFactory.getLogger(TitanicRegression.class);
 
     public static void main(String[] args) throws Exception {
         final int batchSize = 400;
         final int nEpochs = 2000;
-        int seed = 12345;
+        int seed = 31415;
         double learningRate = 0.001;
-        int numInputs = 9;
+        int numInputs = 8;
         int numOutputs = 1;
 
         SplitTestAndTrain testAndTrain = getSplitTestAndTrain(batchSize);
@@ -72,35 +74,32 @@ public class FuelEfficiencyPrediction {
 
     private static MultiLayerConfiguration buildMultiLayerConfiguration(int seed, double learningRate, int numInputs, int numOutputs) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .seed(seed)
-                .weightInit(WeightInit.XAVIER)
-                .updater(new Nesterovs(learningRate, 0.9))
-                .l2(1e-4)
+                .seed(123)
+                .updater(new Adam(0.01))
                 .list()
-                .layer(new DenseLayer.Builder().nIn(numInputs).nOut(64)
-                        .activation(Activation.RELU)
-                        .build())
-                .layer(new DenseLayer.Builder().nIn(64).nOut(64)
+                .layer(new DenseLayer.Builder()
+                        .nIn(7)  // Change this to 6 to match the dataset
+                        .nOut(10)
                         .activation(Activation.RELU)
                         .build())
                 .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                        .nIn(10)
+                        .nOut(1)  // For regression or adjust for classification
                         .activation(Activation.IDENTITY)
-                        .nIn(64).nOut(numOutputs).build())
+                        .build())
                 .build();
+
         return conf;
     }
 
+
     private static SplitTestAndTrain getSplitTestAndTrain(int batchSize) throws IOException, InterruptedException {
 
-        /**
-         * CSV headers
-         * 'MPG', 'Cylinders', 'Displacement', 'Horsepower', 'Weight', 'Acceleration', 'Model Year', 'Origin', "Model Name"
-         */
 
-        CSVRecordReader csvRecordReader = new CSVRecordReader(0, ' ');
-        FileSplit inputSplit = new FileSplit(new File("src/main/resources/auto-mpg.data"));
+        CSVRecordReader csvRecordReader = new CSVRecordReader(1, ',');
+        FileSplit inputSplit = new FileSplit(new File("src/main/resources/processed_train.data"));
         csvRecordReader.initialize(inputSplit);
+
 
         Schema schema = buildSchema();
         TransformProcess transformProcess = buildTransformProcess(schema);
@@ -108,14 +107,14 @@ public class FuelEfficiencyPrediction {
 
         TransformProcessRecordReader trainRecordReader = new TransformProcessRecordReader(csvRecordReader, transformProcess);
         RecordReaderDataSetIterator trainIterator = new RecordReaderDataSetIterator.Builder(trainRecordReader, batchSize)
-                .regression(finalSchema.getIndexOfColumn("MPG"))
+                .regression(finalSchema.getIndexOfColumn("Survived"))
                 .build();
 
         DataSet allData = trainIterator.next();
         normalizeDataSet(allData);
         allData.shuffle(123);
 
-        SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.65);  //Use 65% of data for training
+        SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.8);  //Use 65% of data for training
         return testAndTrain;
     }
 
@@ -127,20 +126,25 @@ public class FuelEfficiencyPrediction {
 
     private static TransformProcess buildTransformProcess(Schema schema) {
         TransformProcess transformProcess = new TransformProcess.Builder(schema)
-                .removeColumns("Model Name")
-                .integerToOneHot("Origin", 1, 3)
+                .removeColumns("PassengerId")
+               // .removeColumns("Parch")
+               // .stringToCategorical("Sex", Arrays.asList("m","f"))
+                .integerToOneHot("Sex",0,1)
+             //   .integerToOneHot("Survived",0,1)
                 .build();
         return transformProcess;
     }
 
     private static Schema buildSchema() {
         Schema schema = new Schema.Builder()
-                .addColumnDouble("MPG")
-                .addColumnInteger("Cylinders")
-                .addColumnsDouble("Displacement", "Horsepower", "Weight", "Acceleration")
-                .addColumnInteger("Model Year")
-                .addColumnInteger("Origin")
-                .addColumnString("Model Name")
+                .addColumnInteger("PassengerId")
+                .addColumnInteger("Survived")
+                .addColumnInteger("Pclass")
+                .addColumnInteger("Sex")
+                .addColumnInteger("Age")
+                .addColumnInteger("SibSp")
+                .addColumnsInteger("Parch")
+                .addColumnsInteger("Fare")
                 .build();
         return schema;
     }
