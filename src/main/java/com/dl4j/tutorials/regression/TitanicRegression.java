@@ -1,20 +1,20 @@
 package com.dl4j.tutorials.regression;
 
 // Importações das bibliotecas necessárias para pré-processamento de dados, configuração da rede neural, treinamento e avaliação.
+
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.transform.TransformProcessRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,13 +28,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
 // Classe principal para treinar um modelo de regressão nos dados do Titanic.
 public class TitanicRegression {
 
     // Configuração do logger para saída de depuração.
     private static final Logger log = LoggerFactory.getLogger(TitanicRegression.class);
+
 
     public static void main(String[] args) throws Exception {
         // Configuração básica do treinamento.
@@ -72,6 +72,12 @@ public class TitanicRegression {
         log.debug("RSE: " + eval.averagerelativeSquaredError());
         log.debug("Correlation: " + eval.averagePearsonCorrelation());
         log.debug("R^2: " + eval.averageRSquared());
+
+        // Exportação do modelo treinado.
+        File modelFile = new File("trained_model.zip");
+        boolean saveUpdater = true; // Salva os valores do updater (útil para continuar o treinamento no futuro).
+        ModelSerializer.writeModel(net, modelFile, saveUpdater);
+        log.debug("Modelo salvo em: " + modelFile.getAbsolutePath());
     }
 
     // Configuração do modelo de rede neural.
