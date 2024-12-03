@@ -35,10 +35,10 @@ public class TitanicRegression {
     private static final Logger log = LoggerFactory.getLogger(TitanicRegression.class);
 
     public static void main(String[] args) throws Exception {
-        final int batchSize = 400;
-        final int nEpochs = 2000;
+        final int batchSize = 500;
+        final int nEpochs = 50;
         int seed = 31415;
-        double learningRate = 0.001;
+        double learningRate = 0.1;
         int numInputs = 8;
         int numOutputs = 1;
 
